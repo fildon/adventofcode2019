@@ -3,12 +3,12 @@ Point = namedtuple('Point', ['x', 'y'])
 
 class WirePath:
     def __init__(self, input_string):
-        self.path_set = []
         self.directions = input_string.strip().split(',')
-        self.get_path_set()
+        self.positions = self.get_positions()
 
-    def get_path_set(self):
+    def get_positions(self):
         current_position = Point(0, 0)
+        positions = dict()
         for direction in self.directions:
             heading = {
                 'U': Point(0, 1),
@@ -22,8 +22,10 @@ class WirePath:
                     current_position.x + heading.x,
                     current_position.y + heading.y
                 )
-                self.path_set.append(current_position)
-        self.path_set.sort(key = lambda p: 10000 * p.x + p.y)
+                if current_position.x not in positions:
+                    positions[current_position.x] = set([])
+                positions[current_position.x].add(current_position.y)
+        return positions
 
     def distance_to_nearest_intersection(self, wire):
         return min(
@@ -35,14 +37,15 @@ class WirePath:
 
     def get_intersections(self, wire):
         intersections = []
-        for pointA in self.path_set:
-            for pointB in wire.path_set:
-                if pointA.x == pointB.x and pointA.y == pointB.y:
-                    intersections.append(pointA)
+        for x in iter(self.positions):
+            if x not in wire.positions:
+                continue
+            intersecting_y_at_this_x = self.positions[x].intersection(wire.positions[x])
+            intersections += [Point(x, y) for y in intersecting_y_at_this_x]
         return intersections
 
 
-file = open('test1.txt', 'r')
+file = open('input.txt', 'r')
 wire1 = WirePath(file.readline())
 wire2 = WirePath(file.readline())
 
