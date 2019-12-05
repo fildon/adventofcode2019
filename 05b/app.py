@@ -1,3 +1,5 @@
+import math
+
 class IntCodeComputer:
     def __init__(self, file_name, input_value):
         file = open(file_name, "r")
@@ -14,122 +16,85 @@ class IntCodeComputer:
             self.process_command_at_pointer()
 
     def process_command_at_pointer(self):
-        command = self.int_code[self.command_pointer]
-        if command % 10 == 1:
-            self.process_add_command(
-                command > 100 and command % 1000 > 100,
-                command > 1000
-            )
-            self.command_pointer += 4
-        elif command % 10 == 2:
-            self.process_multiply_command(
-                command > 100 and command % 1000 > 100,
-                command > 1000
-            )
-            self.command_pointer += 4
-        elif command % 10 == 3:
-            self.process_input_command()
-            self.command_pointer += 2
-        elif command % 10 == 4:
-            self.process_output_command(len(str(command)) == 3 and command > 100)
-            self.command_pointer += 2
-        elif command % 10 == 5:
-            self.process_jump_if_true(
-                command > 100 and command % 1000 > 100,
-                command > 1000
-            )
-        elif command % 10 == 6:
-            self.process_jump_if_false(
-                command > 100 and command % 1000 > 100,
-                command > 1000
-            )
-        elif command % 10 == 7:
-            self.process_less_than(
-                command > 100 and command % 1000 > 100,
-                command > 1000
-            )
-        elif command % 10 == 8:
-            self.process_equals(
-                command > 100 and command % 1000 > 100,
-                command > 1000
-            )
-        elif command % 10 == 9:
+        command_switch = {
+            1: [self.addition, [True, True, False]],
+            2: [self.multiplication, [True, True, False]],
+            3: [self.read_input, [False]],
+            4: [self.write_output, [True]],
+            5: [self.jump_if_true, [True, True]],
+            6: [self.jump_if_false, [True, True]],
+            7: [self.less_than, [True, True, False]],
+            8: [self.equals, [True, True, False]],
+            99: [self.set_halt, []]
+        }
+        int_code = self.int_code[self.command_pointer]
+        if int_code % 100 not in command_switch:
             self.halt = True
-            print("HALT")
-        else:
-            self.halt = True
-            print("UNRECOGNISED COMMAND: " + str(command))
+            print("UNRECOGNISED COMMAND: ")
+            print(str(self.int_code[self.command_pointer]))
+            return   
+        executable, n_args = command_switch[int_code % 100]
+        args = self.get_args(n_args)
+        executable(args)
+    
+    def get_args(self, n_args):
+        param_modes = math.floor(self.int_code[self.command_pointer] / 100)
+        args = []
+        while param_modes > 0:
+            args.append(param_modes % 10)
+            param_modes = math.floor(param_modes / 10)
+        for _ in range(len(n_args) - len(args)):
+            args.append(0)
+        for i in range(len(args)):
+            is_immediate = args[i] == 1
+            arg = self.int_code[self.command_pointer + 1 + i]
+            if not is_immediate and n_args[i]:
+                arg = self.int_code[arg]
+            args[i] = arg
+        return args
 
-    def process_add_command(self, is_arg1_immediate, is_arg2_immediate):
-        arg1 = self.int_code[self.command_pointer + 1] if is_arg1_immediate else self.int_code[self.int_code[self.command_pointer + 1]]
-        arg2 = self.int_code[self.command_pointer + 2] if is_arg2_immediate else self.int_code[self.int_code[self.command_pointer + 2]]
-        output_pointer = self.int_code[self.command_pointer + 3]
-        self.int_code[output_pointer] = arg1 + arg2
+    def addition(self, args):
+        self.int_code[args[2]] = args[0] + args[1]
+        self.command_pointer += 4
 
-    def process_multiply_command(self, is_arg1_immediate, is_arg2_immediate):
-        arg1 = self.int_code[self.command_pointer + 1] if is_arg1_immediate else self.int_code[self.int_code[self.command_pointer + 1]]
-        arg2 = self.int_code[self.command_pointer + 2] if is_arg2_immediate else self.int_code[self.int_code[self.command_pointer + 2]]
-        output_pointer = self.int_code[self.command_pointer + 3]
-        self.int_code[output_pointer] = arg1 * arg2
+    def multiplication(self, args):
+        self.int_code[args[2]] = args[0] * args[1]
+        self.command_pointer += 4
 
-    def process_input_command(self):
-        # Opcode 3 takes a single integer as input and saves it to the
-        # position given by its only parameter. For example, the
-        # instruction 3,50 would take an input value and store it at
-        # address 50.
-        output_pointer = self.int_code[self.command_pointer + 1]
-        self.int_code[output_pointer] = self.input
+    def read_input(self, args):
+        self.int_code[args[0]] = self.input
+        self.command_pointer += 2
 
-    def process_output_command(self, is_immediate_mode):
-        # Opcode 4 outputs the value of its only parameter. For
-        # example, the instruction 4,50 would output the value at
-        # address 50.
-        if is_immediate_mode:
-            print(self.int_code[self.command_pointer + 1])
-        else:
-            print(self.int_code[self.int_code[self.command_pointer + 1]])
+    def write_output(self, args):
+        print(f'OUTPUT: {args[0]}')
+        self.command_pointer += 2
 
-    def process_jump_if_true(self, is_arg1_immediate, is_arg2_immediate):
-        arg1 = self.int_code[self.command_pointer + 1]
-        arg1_value = arg1 if is_arg1_immediate else self.int_code[arg1]
-        arg2 = self.int_code[self.command_pointer + 2]
-        arg2_value = arg2 if is_arg2_immediate else self.int_code[arg2]
-        if not arg1_value == 0:
-            self.command_pointer = arg2_value
+    def jump_if_true(self, args):
+        if not args[0] == 0:
+            self.command_pointer = args[1]
         else:
             self.command_pointer += 3
 
-    def process_jump_if_false(self, is_arg1_immediate, is_arg2_immediate):
-        arg1 = self.int_code[self.command_pointer + 1]
-        arg1_value = arg1 if is_arg1_immediate else self.int_code[arg1]
-        arg2 = self.int_code[self.command_pointer + 2]
-        arg2_value = arg2 if is_arg2_immediate else self.int_code[arg2]
-        if arg1_value == 0:
-            self.command_pointer = arg2_value
+    def jump_if_false(self, args):
+        if args[0] == 0:
+            self.command_pointer = args[1]
         else:
             self.command_pointer += 3
 
-    def process_less_than(self, is_arg1_immediate, is_arg2_immediate):
-        arg1 = self.int_code[self.command_pointer + 1]
-        arg1_value = arg1 if is_arg1_immediate else self.int_code[arg1]
-        arg2 = self.int_code[self.command_pointer + 2]
-        arg2_value = arg2 if is_arg2_immediate else self.int_code[arg2]
-        output_location = self.int_code[self.command_pointer + 3]
-        self.int_code[output_location] = 1 if arg1_value < arg2_value else 0
+    def less_than(self, args):
+        self.int_code[args[2]] = 1 if args[0] < args[1] else 0
         self.command_pointer += 4
 
-    def process_equals(self, is_arg1_immediate, is_arg2_immediate):
-        arg1 = self.int_code[self.command_pointer + 1]
-        arg1_value = arg1 if is_arg1_immediate else self.int_code[arg1]
-        arg2 = self.int_code[self.command_pointer + 2]
-        arg2_value = arg2 if is_arg2_immediate else self.int_code[arg2]
-        output_location = self.int_code[self.command_pointer + 3]
-        self.int_code[output_location] = 1 if arg1_value == arg2_value else 0
+    def equals(self, args):
+        self.int_code[args[2]] = 1 if args[0] == args[1] else 0
         self.command_pointer += 4
 
-    def process_halt_command(self):
+    def set_halt(self, args):
         self.halt = True
+        print('HALTING')
 
 
 computer = IntCodeComputer('input.txt', 5)
 computer.run_int_code()
+
+# SOLVED: 2808771
