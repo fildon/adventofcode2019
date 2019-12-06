@@ -30,14 +30,8 @@ class OrbitalBody:
 tree = OrbitalTree('input.txt')
 tree.build_orbital_tree()
 
-you_lineage = tree.registered_bodies['YOU'].get_lineage()
-san_lineage = tree.registered_bodies['SAN'].get_lineage()
+you_lineage = set(tree.registered_bodies['YOU'].get_lineage())
+san_lineage = set(tree.registered_bodies['SAN'].get_lineage())
 
-orbital_transfers = 0
-for i in range(len(you_lineage)):
-    if you_lineage[i] not in san_lineage:
-        orbital_transfers += 1
-for i in range(len(san_lineage)):
-    if san_lineage[i] not in you_lineage:
-        orbital_transfers += 1
-print(orbital_transfers)
+print(len(you_lineage ^ san_lineage))
+# SOLVED 277
