@@ -1,0 +1,13 @@
+3       read input command
+9       pointer where to write the input
+1008    equality check (is the input equal to zero?)
+9       pointer to where the input was written
+0       immediate zero value
+7       pointer to where to write the negated input
+104     Output the negated input (this will cause the robot to flip the current tile's colour)
+0       Placeholder that is overwritten by the negated input
+104     Output the input (this will cause the robot to turn right or left)
+0       Placeholder that is overwritten by the input
+105     jump if true command (acting as a goto 0)
+1       Always true!
+0       Pointer to jump to (the beginning!)

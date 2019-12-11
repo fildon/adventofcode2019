@@ -157,17 +157,30 @@ class HullCanvas:
     def set_colour(self, xy, colour):
         self.hull[xy] = colour
 
+    def draw_to_console(self):
+        xmin = min(map(lambda loc: loc[0], self.hull.keys()))
+        ymin = min(map(lambda loc: loc[1], self.hull.keys()))
+        xmax = max(map(lambda loc: loc[0], self.hull.keys()))
+        ymax = max(map(lambda loc: loc[1], self.hull.keys()))
+
+        for y in range(ymin, ymax + 1):
+            paint_row = ''
+            for x in range(xmin, xmax + 1):
+                paint_row += '.' if self.get_colour((x, y)) == 0 else '#'
+            print(paint_row)
+
 
 class PaintingRobot:
-    def __init__(self):
+    def __init__(self, file_name):
         self.canvas = HullCanvas()
         self.location = (0, 0)
         self.headings = [(0, -1), (1, 0), (0, 1), (-1, 0)]
         self.heading_index = 0
-        self.computer = IntCodeComputer('input.txt')
+        self.computer = IntCodeComputer(file_name)
+        self.step_count = 0
 
-    def run(self):
-        while True:
+    def run(self, robot_halt_check):
+        while robot_halt_check(self):
             self.computer.run_int_code(self.canvas.get_colour(self.location))
             if self.computer.halt:
                 break
@@ -184,20 +197,11 @@ class PaintingRobot:
                 self.location[0] + heading[0],
                 self.location[1] + heading[1]
             )
+            self.step_count += 1
 
 
-robot = PaintingRobot()
-robot.run()
-
-xmin = min(map(lambda loc: loc[0], robot.canvas.hull.keys()))
-ymin = min(map(lambda loc: loc[1], robot.canvas.hull.keys()))
-xmax = max(map(lambda loc: loc[0], robot.canvas.hull.keys()))
-ymax = max(map(lambda loc: loc[1], robot.canvas.hull.keys()))
-
-for y in range(ymin, ymax + 1):
-    paint_row = ''
-    for x in range(xmin, xmax + 1):
-        paint_row += '.' if robot.canvas.get_colour((x, y)) == 0 else '#'
-    print(paint_row)
+robot = PaintingRobot('langton.txt')
+robot.run(lambda r: r.step_count < 11000)
+robot.canvas.draw_to_console()
 
 # SOLVED ZLEBKJRA
