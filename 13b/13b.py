@@ -193,16 +193,16 @@ class Frame:
             raise Exception(f'WARNING: {colour} outside known values')
         return pixel_key[colour]
     
-    def get_paddle_x(self):
+    def get_paddle_location(self):
         for cell in self.frame:
             if self.frame[cell] == 3:
-                return cell[0]
+                return cell
         raise Exception("The paddle has gone missing!")
 
-    def get_ball_x(self):
+    def get_ball_location(self):
         for cell in self.frame:
             if self.frame[cell] == 4:
-                return cell[0]
+                return cell
         raise Exception("The ball has gone missing!")
 
 
@@ -218,8 +218,8 @@ class BreakOut:
             except RuntimeError:
                 self.frame.parse_input(self.computer.output)
                 self.computer.output = [] # wipe computer output
-                ball_x = self.frame.get_ball_x()
-                paddle_x = self.frame.get_paddle_x()
+                ball_x = self.frame.get_ball_location()[0]
+                paddle_x = self.frame.get_paddle_location()[0]
                 steer = -1 if ball_x < paddle_x else 0 if ball_x == paddle_x else 1
                 self.computer.input.append(steer)
             else:
@@ -234,4 +234,6 @@ breakout = BreakOut('input.txt')
 breakout.computer.int_code.write(0, 2) # inserts two quarters
 score = breakout.run()
 print(score)
+print(f'paddle: {str(breakout.frame.get_paddle_location())}')
+print(f'ball: {str(breakout.frame.get_ball_location())}')
 # SOLVED 17336
