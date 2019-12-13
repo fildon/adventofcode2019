@@ -128,6 +128,14 @@ input_moons = [
     Moon(Vector(2, 2, -6))
 ]
 
+import timeit
+
+start = timeit.default_timer()
+
 simulation = Simulation(input_moons)
 repeat = simulation.find_repeat()
 print(repeat)
+
+stop = timeit.default_timer()
+
+print(f'Time: ', stop - start)
